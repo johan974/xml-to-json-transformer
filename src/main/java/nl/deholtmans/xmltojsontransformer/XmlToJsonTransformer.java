@@ -28,6 +28,7 @@ public class XmlToJsonTransformer {
 
     public static void main(String[] args) {
         XmlToJsonTransformer xml2Json = new XmlToJsonTransformer();
+        xml2Json.xmlSplitter();
         xml2Json.xmlToJson();
 //        xml2Json.splitXmlIntoHighlevelElementsFile();
 //        xml2Json.splitXmlIntoHighlevelElements();
@@ -40,7 +41,55 @@ public class XmlToJsonTransformer {
 //        xml2Json.domStuff();
 //        xml2Json.xlstStuff();
 //        xml2Json.noTransformation();
-//        xml2Json.xmlToJson();
+    }
+
+    private void xmlSplitter() {
+        System.out.println( "*** xmlSplitter");
+        String testCars = "<root><car><name>car1</name></car><other><something>Unknown</something></other><car><name>car2</name></car></root>";
+        XMLInputFactory factory = XMLInputFactory.newInstance();
+        try {
+            XMLStreamReader streamReader = factory.createXMLStreamReader(new StringReader(testCars));
+            streamReader.nextTag();
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer t = tf.newTransformer();
+            streamReader.nextTag();
+            while ( streamReader.isStartElement() ||
+                  ( ! streamReader.hasNext() && streamReader.nextTag() == XMLStreamConstants.START_ELEMENT)) {
+                StringWriter writer = new StringWriter();
+                StreamResult result = new StreamResult(writer);
+                t.transform(new StAXSource(streamReader), result);
+                System.out.println( "XmlElement: " + writer.toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void xmlToJson() {
+        System.out.println( "*** xmlStreamReaderTransform");
+        String testCars = "<root><car><name>car1</name></car><other><something>Unknown</something></other><car><name>car2</name></car></root>";
+        String startElement = "car";
+        int volgnummer = 1;
+        XMLInputFactory factory = XMLInputFactory.newInstance();
+        try {
+            XMLStreamReader streamReader = factory.createXMLStreamReader(new StringReader(testCars));
+            streamReader.nextTag();
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer t = tf.newTransformer();
+            t.setOutputProperty("omit-xml-declaration", "yes");
+            streamReader.nextTag();
+            while ( streamReader.isStartElement() ||
+                    ( ! streamReader.hasNext() && streamReader.nextTag() == XMLStreamConstants.START_ELEMENT)) {
+                StringWriter writer = new StringWriter();
+                StreamResult result = new StreamResult(writer);
+                t.transform(new StAXSource(streamReader), result);
+                JSONObject jsonObject = XML.toJSONObject(writer.toString());
+                jsonObject.put("sequence", ++volgnummer);
+                System.out.println("XmlChunkToJson: " + jsonObject.toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void testXmlToJson() {
@@ -391,64 +440,5 @@ public class XmlToJsonTransformer {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-
-    private void xmlToJson() {
-        System.out.println( "*** xmlStreamReaderTransform");
-        String testCars = "<root><car><name>car1</name></car><other><something>Unknown</something></other><car><name>car2</name></car></root>";
-        String startElement = "car";
-        int volgnummer = 1;
-        XMLInputFactory factory = XMLInputFactory.newInstance();
-        try {
-            XMLStreamReader streamReader = factory.createXMLStreamReader(new StringReader(testCars));
-            streamReader.nextTag();
-            TransformerFactory tf = TransformerFactory.newInstance();
-            Transformer t = tf.newTransformer();
-            t.setOutputProperty("omit-xml-declaration", "yes");
-            streamReader.nextTag();
-            while ( streamReader.isStartElement() || streamReader.nextTag() == XMLStreamConstants.START_ELEMENT) {
-                StringWriter writer = new StringWriter();
-                StreamResult result = new StreamResult(writer);
-                t.transform(new StAXSource(streamReader), result);
-                JSONObject jsonObject = XML.toJSONObject(writer.toString());
-                jsonObject.put("sequence", ++volgnummer);
-                System.out.println("XmlChunkToJson: " + jsonObject.toString());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-
-//        String startElement = "car";
-//        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-//            XMLInputFactory factory = XMLInputFactory.newInstance();
-//            XMLStreamReader streamReader = factory.createXMLStreamReader(new StringReader(testXml2));
-//            Source source = new StAXSource(streamReader);
-//
-//            StringWriter writer = new StringWriter();
-//            StreamResult result = new StreamResult(writer);
-//
-//            TransformerFactory tFactory = TransformerFactory.newInstance();
-//            Transformer transformer = tFactory.newTransformer();
-//            transformer.transform(source, result);
-//
-//            System.out.println( "Output = " + writer);
-//
-//            while (streamReader.hasNext()) {
-//                int next = streamReader.next();
-//                if (next == XMLStreamConstants.START_ELEMENT) {
-//                    String localName = streamReader.getLocalName();
-//                    if (localName.equals(startElement)) {
-//                        transformer.transform(source, new StreamResult(out));
-//                        JSONObject jsonObject = XML.toJSONObject(out.toString());
-//                        jsonObject.put("volgnummer", ++volgnummer);
-//                    }
-//                }
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
     }
 }
